@@ -76,12 +76,16 @@ hogares/stephania-santiago/
 
 ## Despliegue automático (CI/CD)
 
-Cada push a `main` ejecuta `.github/workflows/deploy.yml`: compila la app y despliega
-**Hosting + reglas de Firestore** en el proyecto `stego-cd22b`. Los pull requests solo compilan.
+Cada push a `main` ejecuta `.github/workflows/deploy.yml`: compila la app y la despliega en el
+sitio de Hosting **`stegobook`** (https://stegobook.web.app) del proyecto `stego-cd22b`, sin tocar
+el sitio principal de la otra app. Los pull requests solo compilan.
+
+Las reglas de Firestore **no** se despliegan automáticamente: pega `firestore.rules` en
+Firebase → Firestore → Reglas cuando cambien.
 
 Requisito (una vez): en GitHub → *Settings → Secrets and variables → Actions* crear el secreto
 `FIREBASE_SERVICE_ACCOUNT` con el JSON de la cuenta de servicio
 (Firebase → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada).
 
 > `firestore.rules` contiene también las reglas de la otra app del proyecto (`users`, `couples`…).
-> Si cambian esas reglas en la consola, cópienlas aquí: cada deploy reemplaza las reglas publicadas.
+> Mantengan este archivo igual a lo publicado en la consola.

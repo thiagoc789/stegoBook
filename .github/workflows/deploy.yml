@@ -28,7 +28,8 @@ jobs:
           path: dist
 
   deploy:
-    # Solo despliega con push a main (los PR solo compilan)
+    # Solo despliega con push a main (los PR solo compilan).
+    # Las reglas de Firestore NO se despliegan aquí (se publican a mano en la consola).
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
@@ -47,10 +48,15 @@ jobs:
         run: |
           if [ -z "$SA" ]; then echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT en GitHub"; exit 1; fi
           printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
-      - name: Deploy (hosting + reglas de Firestore)
+      - name: Deploy a Firebase Hosting (sitio stegobook)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project stego-cd22b --non-interactive --force
+        run: |
+          npm i -g firebase-tools@latest >/dev/null 2>&1
+          # Crea el sitio la primera vez (si ya existe, sigue)
+          firebase hosting:sites:get stegobook --project stego-cd22b --non-interactive >/dev/null 2>&1 \
+            || firebase hosting:sites:create stegobook --project stego-cd22b --non-interactive || true
+          firebase deploy --only hosting:stegobook --project stego-cd22b --non-interactive --force
       - name: Limpiar credenciales
         if: always()
         run: rm -f "$RUNNER_TEMP/sa.json"
