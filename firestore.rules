@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // App sin autenticación: solo se permite leer/escribir dentro del hogar
+    // de Stephania y Santiago. Todo lo demás queda bloqueado.
+    match /hogares/stephania-santiago/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
