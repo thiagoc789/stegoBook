@@ -1,110 +1,85 @@
 import { useEffect, useState } from 'react';
 import { useApp } from './lib/context';
 import { firebaseConfigured } from './lib/firebase';
-import { PERSONAS, EMOJI_PERSONA } from './lib/constants';
-import GastoForm from './components/GastoForm';
-import Resumen from './pages/Resumen';
-import Gastos from './pages/Gastos';
-import Fijos from './pages/Fijos';
-import Ingresos from './pages/Ingresos';
-import Presupuestos from './pages/Presupuestos';
+import { EMOJI_PERSONA, infoCategoria, INICIO_APP, JUNTOS, PERSONAS } from './lib/constants';
+import { currentMonth } from './lib/format';
+import { MonthPicker } from './components/ui';
+import QuickAdd from './components/QuickAdd';
+import Inicio from './pages/Inicio';
+import Movimientos from './pages/Movimientos';
 import Metas from './pages/Metas';
-import Aspiraciones from './pages/Aspiraciones';
-import Previsiones from './pages/Previsiones';
-import Ajustes from './pages/Ajustes';
+import MiPlata from './pages/MiPlata';
 
 const PAGES = [
-  { id: 'resumen', label: 'Resumen', icon: '🏠', C: Resumen },
-  { id: 'gastos', label: 'Gastos', icon: '🧾', C: Gastos },
-  { id: 'fijos', label: 'Fijos', icon: '📅', C: Fijos },
-  { id: 'ingresos', label: 'Ingresos', icon: '💼', C: Ingresos },
-  { id: 'presupuestos', label: 'Presupuestos', icon: '📊', C: Presupuestos },
+  { id: 'inicio', label: 'Inicio', icon: '🏠', C: Inicio },
+  { id: 'movimientos', label: 'Gastos', icon: '🧾', C: Movimientos },
   { id: 'metas', label: 'Metas', icon: '🎯', C: Metas },
-  { id: 'suenos', label: 'Sueños', icon: '🌈', C: Aspiraciones },
-  { id: 'previsiones', label: 'Previsiones', icon: '🔮', C: Previsiones },
-  { id: 'ajustes', label: 'Ajustes', icon: '⚙️', C: Ajustes },
+  { id: 'miplata', label: 'Mi plata', icon: '💼', C: MiPlata },
 ];
-
-const MOBILE_MAIN = ['resumen', 'gastos', 'metas', 'previsiones'];
-
-const pageFromHash = () => PAGES.find((p) => `#${p.id}` === window.location.hash)?.id || 'resumen';
+const pageFromHash = () => PAGES.find((p) => `#${p.id}` === window.location.hash)?.id || 'inicio';
+const abrirRapido = new URLSearchParams(window.location.search).has('rapido');
 
 export default function App() {
-  const { loading, error, yo, setYo } = useApp();
+  const { loading, error, vista, setVista, fmt } = useApp();
   const [page, setPage] = useState(pageFromHash);
-  const [quick, setQuick] = useState(false);
-  const [more, setMore] = useState(false);
+  const [quick, setQuick] = useState(abrirRapido);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     const onHash = () => setPage(pageFromHash());
     window.addEventListener('hashchange', onHash);
+    if (abrirRapido) window.history.replaceState(null, '', window.location.pathname + window.location.hash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  useEffect(() => {
+    if (!toast) return undefined;
+    const t = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const go = (id) => { window.location.hash = id; setPage(id); window.scrollTo(0, 0); };
   const Current = PAGES.find((p) => p.id === page).C;
+  const enPrueba = currentMonth() < INICIO_APP;
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="logo">💰</span>
-          <div><b>StegoBook</b><small>Stephania & Santiago</small></div>
+      <header className="top">
+        <div className="top-row">
+          <div className="brand"><span className="logo">💰</span><b>StegoBook</b></div>
+          <MonthPicker />
         </div>
-        <nav>
-          {PAGES.map((p) => (
-            <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}>
-              <span>{p.icon}</span> {p.label}
-            </button>
+        <div className="vista">
+          {[...PERSONAS, JUNTOS].map((p) => (
+            <button key={p} className={vista === p ? `active v-${p}` : ''} onClick={() => setVista(p)}>{EMOJI_PERSONA[p]} {p}</button>
           ))}
-        </nav>
-        <div className="whoami">
-          <small>Soy</small>
-          <div className="who-btns">
-            {PERSONAS.map((p) => (
-              <button key={p} className={yo === p ? 'active' : ''} onClick={() => setYo(p)}>{EMOJI_PERSONA[p]} {p}</button>
-            ))}
-          </div>
         </div>
-      </aside>
+      </header>
 
       <main>
-        {!firebaseConfigured && (
-          <div className="banner">⚠️ Modo local: los datos se guardan solo en este navegador. Configura Firebase para compartirlos entre los dos (ver README).</div>
-        )}
-        {error && <div className="banner danger">No se pudo conectar con Firestore: {error.message}. Revisen las reglas de seguridad.</div>}
+        {enPrueba && <div className="banner">🚧 En construcción: empiezan el <b>1 de diciembre</b>. Lo que registren antes es de prueba.</div>}
+        {!firebaseConfigured && <div className="banner">⚠️ Modo local: los datos solo quedan en este navegador.</div>}
+        {error && <div className="banner danger">No se pudo conectar con la base de datos: {error.message}</div>}
         {loading ? <div className="loading">Cargando…</div> : <Current go={go} />}
       </main>
 
       <nav className="bottom-nav">
-        {PAGES.filter((p) => MOBILE_MAIN.includes(p.id)).map((p) => (
-          <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => { setMore(false); go(p.id); }}>
-            <span>{p.icon}</span><small>{p.label}</small>
-          </button>
+        {PAGES.slice(0, 2).map((p) => (
+          <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
         ))}
-        <button className={more || !MOBILE_MAIN.includes(page) ? 'active' : ''} onClick={() => setMore(!more)}>
-          <span>☰</span><small>Más</small>
-        </button>
+        <button className="fab" onClick={() => setQuick(true)} aria-label="Agregar gasto">＋</button>
+        {PAGES.slice(2).map((p) => (
+          <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
+        ))}
       </nav>
-      {more && (
-        <div className="more-sheet" onClick={() => setMore(false)}>
-          <div className="more-grid" onClick={(e) => e.stopPropagation()}>
-            {PAGES.filter((p) => !MOBILE_MAIN.includes(p.id)).map((p) => (
-              <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => { setMore(false); go(p.id); }}>
-                <span>{p.icon}</span>{p.label}
-              </button>
-            ))}
-            <div className="more-who">
-              {PERSONAS.map((p) => (
-                <button key={p} className={yo === p ? 'active' : ''} onClick={() => setYo(p)}>Soy {EMOJI_PERSONA[p]} {p}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      <button className="fab" onClick={() => setQuick(true)} aria-label="Agregar gasto">＋</button>
-      {quick && <GastoForm onClose={() => setQuick(false)} />}
+      {quick && !loading && (
+        <QuickAdd
+          onClose={() => setQuick(false)}
+          onSaved={(g) => setToast(`✓ ${fmt(g.monto)} · ${infoCategoria(g.categoria).emoji} ${g.categoria} (${g.tipo})`)}
+        />
+      )}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }

@@ -14,6 +14,7 @@ const config = {
   appId: env.VITE_FIREBASE_APP_ID || '1:862901970284:web:b9c2c0da5d3099236dbf49',
 };
 
-export const firebaseConfigured = Boolean(config.apiKey && config.projectId);
+// VITE_LOCAL=1 fuerza el modo local (localStorage), útil para pruebas sin tocar los datos reales.
+export const firebaseConfigured = env.VITE_LOCAL !== '1' && Boolean(config.apiKey && config.projectId);
 
 export const db = firebaseConfigured ? getFirestore(initializeApp(config)) : null;

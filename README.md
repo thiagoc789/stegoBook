@@ -4,19 +4,26 @@ App web para llevar juntos la contabilidad del hogar: salarios, gastos fijos y v
 presupuestos, metas de ahorro, sueños y previsiones. Los datos viven en **Firestore**
 (sin login) y se sincronizan en tiempo real entre los dos celulares.
 
-## Funcionalidades
+## Cómo funciona
 
-| Sección | Qué hace |
+Arriba eligen **Stephania**, **Santiago** o **Juntos**. Cada uno lleva sus propios ingresos, gastos y metas;
+“Juntos” suma los dos y los compara lado a lado.
+
+| Pestaña | Qué hace |
 |---|---|
-| 🏠 **Resumen** | Ingresos, gastos, balance y tasa de ahorro del mes · proyección de cómo cierra el mes y cuánto pueden gastar por día · alertas y consejos automáticos · gastos por categoría · tendencia de 6 meses · regla 50/30/20 · **reparto justo** (quién le debe a quién, proporcional al ingreso o 50/50) |
-| 🧾 **Gastos** | Gastos variables del mes con buscador y filtros (categoría, quién pagó, necesidad/gusto), agrupados por día, exportar a CSV. Botón **＋** flotante para registrar un gasto desde cualquier pantalla |
-| 📅 **Fijos** | Arriendo, servicios, suscripciones, cuotas… con frecuencia mensual, bimestral, trimestral, semestral o anual · checklist de “pagado” por mes · provisión mensual de pagos anuales |
-| 💼 **Ingresos** | Salarios de cada uno con historial (si suben el sueldo, los meses pasados no cambian) e ingresos extra (primas, bonos, freelance) |
-| 📊 **Presupuestos** | Tope mensual por categoría, alertas al pasarse o ir más rápido que el mes, sugerencia automática (−10 % del promedio) |
-| 🎯 **Metas** | Metas de ahorro con aportes de cada uno, cuota mensual necesaria, fecha estimada al ritmo actual y fondo de emergencia sugerido |
-| 🌈 **Sueños** | Aspiraciones (sueños grandes, compras deseadas, experiencias): cuántos meses tardarían en lograrlo, **periodo de enfriamiento de 30 días** para compras impulsivas, convertir en meta, contador de “ahorrado por no comprar” |
-| 🔮 **Previsiones** | Proyección a 6–36 meses, simulador “¿y si…?” (recortar gastos, por categoría, aumento de salario, ingreso extra), “¿cuándo llegamos a X?”, pagos grandes que vienen |
-| ⚙️ **Ajustes** | Quién usa el dispositivo, moneda, meta de ahorro %, modo de reparto, categorías propias, respaldo/importación JSON, datos de ejemplo |
+| 🏠 **Inicio** | Cuánto queda del mes y cuánto se puede gastar por día · **qué recortar** para cumplir las metas · necesidades vs. gustos · en qué se va la plata |
+| 🧾 **Gastos** | Los gastos del mes, filtrables por necesidad/gusto y categoría. Toca uno para editarlo |
+| ＋ | **Gasto rápido**: monto → concepto (o un atajo) → guardar. La categoría y si es necesidad o gusto se ponen solos (palabras clave como “Rappi”, “D1”, “Uber” y lo que hayan registrado antes) |
+| 🎯 **Metas** | Metas de cada uno o de los dos, cuánto apartar al mes y si les alcanza |
+| 💼 **Mi plata** | Salario, ingresos extra, gastos fijos, acceso rápido y ajustes |
+
+### Acceso rápido (tipo widget)
+- **Android**: Chrome → ⋮ → *Instalar app*. Mantener presionado el ícono → *Gasto rápido* → arrastrar a la pantalla.
+- **iPhone**: app *Atajos* → nuevo atajo → *Abrir URL* `https://stegobook.web.app/?rapido=1&quien=Stephania` (o `Santiago`) → *Agregar a pantalla de inicio* o al widget de Atajos.
+
+### Arranque
+Hasta el 1 de diciembre de 2026 es modo prueba. Ese día: *Mi plata → Borrar datos de prueba*
+(borra gastos, ingresos extra y aportes; conserva salarios, fijos y metas).
 
 ## Configurar Firebase (una sola vez)
 
@@ -60,18 +67,22 @@ npx firebase-tools deploy --only hosting --project TU_ID_DE_PROYECTO
 
 Después, en el celular abran la URL y usen “Agregar a pantalla de inicio” para tenerla como app.
 
+## Pruebas locales sin tocar los datos reales
+
+```bash
+VITE_LOCAL=1 npm run dev
+```
+
 ## Estructura de datos
 
 ```
 hogares/stephania-santiago/
   salarios/      { persona, concepto, monto, desde, hasta }
   ingresos/      { persona, concepto, monto, fecha }
-  gastos/        { concepto, monto, categoria, pagadoPor, fecha, tipo: necesidad|deseo, nota }
-  gastosFijos/   { concepto, monto, categoria, pagadoPor, dia, frecuencia, desde, hasta, pagados: { 'YYYY-MM': true } }
-  presupuestos/  { categoria, limite }
-  metas/         { nombre, emoji, objetivo, fechaLimite, tipo, aportes: [{ monto, persona, fecha }] }
-  aspiraciones/  { nombre, tipo, costo, prioridad, estado, quien, nota, link, fecha }
-  config/general { moneda, metaAhorroPct, reparto, categoriasPersonalizadas }
+  gastos/        { persona, concepto, monto, categoria, tipo: necesidad|gusto, fecha }
+  gastosFijos/   { persona, concepto, monto, categoria, tipo, desde, hasta }
+  metas/         { nombre, emoji, objetivo, fechaLimite, dueno: Stephania|Santiago|Ambos, aportes: [{ monto, persona, fecha }] }
+  config/general { moneda }
 ```
 
 ## Despliegue automático (CI/CD)

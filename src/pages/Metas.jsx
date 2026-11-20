@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../lib/context';
 import { add, remove, update } from '../lib/store';
 import { PERSONAS } from '../lib/constants';
-import { estadoMeta, totalAhorradoMetas } from '../lib/finance';
-import { addMonths, currentMonth, dateLabel, monthDiff, monthLabel, today } from '../lib/format';
-import { Card, confirmar, Empty, Field, Modal, PersonaTag, Progress, Segmented, Stat } from '../components/ui';
+import {
+  cuotaMetas, duenoMeta, estadoMeta, metasDe, resumen,
+} from '../lib/finance';
+import { addMonths, dateLabel, monthLabel, today } from '../lib/format';
+import {
+  Card, confirmar, Empty, Field, Modal, MoneyInput, PersonaTag, Progress, Segmented,
+} from '../components/ui';
 
-const EMOJIS = ['🎯', '🏠', '✈️', '🚗', '💍', '👶', '🛟', '🎓', '💻', '🐶', '🏖️', '💰'];
+const EMOJIS = ['🎯', '🛟', '🏠', '✈️', '🚗', '💍', '🎓', '💻', '🎄', '🏖️', '🐶', '💰'];
 
-export function MetaForm({ meta, onClose }) {
-  const [f, setF] = useState(meta || { nombre: '', emoji: '🎯', objetivo: '', fechaLimite: '', tipo: 'meta', aportes: [] });
+function MetaForm({ meta, onClose }) {
+  const { persona, yo } = useApp();
+  const [f, setF] = useState(meta || { nombre: '', emoji: '🎯', objetivo: '', fechaLimite: '', dueno: persona || 'Ambos', aportes: [] });
   const s = (k) => (v) => setF((o) => ({ ...o, [k]: v?.target ? v.target.value : v }));
   const submit = async (e) => {
     e.preventDefault();
@@ -19,147 +24,126 @@ export function MetaForm({ meta, onClose }) {
     onClose();
   };
   return (
-    <Modal title={meta?.id ? 'Editar meta' : 'Nueva meta de ahorro'} onClose={onClose}>
+    <Modal title={meta?.id ? 'Editar meta' : 'Nueva meta'} onClose={onClose}>
       <form className="form" onSubmit={submit}>
-        <Field label="Ícono">
-          <div className="emoji-pick">
-            {EMOJIS.map((em) => <button type="button" key={em} className={f.emoji === em ? 'active' : ''} onClick={() => s('emoji')(em)}>{em}</button>)}
-          </div>
+        <Field label="¿De quién es?">
+          <Segmented options={[...PERSONAS, 'Ambos']} value={f.dueno || yo} onChange={s('dueno')} />
         </Field>
-        <Field label="Nombre"><input value={f.nombre} onChange={s('nombre')} placeholder="Fondo de emergencia, viaje a Cartagena…" required autoFocus /></Field>
-        <div className="grid-2">
-          <Field label="¿Cuánto necesitan?"><input type="number" min="0" inputMode="decimal" value={f.objetivo} onChange={s('objetivo')} required /></Field>
-          <Field label="¿Para cuándo?"><input type="date" value={f.fechaLimite} onChange={s('fechaLimite')} /></Field>
+        <div className="emoji-pick">
+          {EMOJIS.map((em) => <button type="button" key={em} className={f.emoji === em ? 'active' : ''} onClick={() => s('emoji')(em)}>{em}</button>)}
         </div>
-        <Field label="Tipo">
-          <Segmented options={[{ value: 'meta', label: '🎯 Meta' }, { value: 'emergencia', label: '🛟 Fondo de emergencia' }]} value={f.tipo} onChange={s('tipo')} />
+        <Field label="¿Qué quieren lograr?"><input value={f.nombre} onChange={s('nombre')} placeholder="Fondo de emergencia, viaje, regalos de Navidad…" required /></Field>
+        <Field label="¿Cuánto necesitan?"><MoneyInput value={f.objetivo} onChange={s('objetivo')} required /></Field>
+        <Field label="¿Para cuándo?" hint="Con la fecha calculamos cuánto apartar cada mes.">
+          <input type="date" value={f.fechaLimite} onChange={s('fechaLimite')} />
         </Field>
-        <button className="btn primary block">Guardar</button>
+        <button className="btn primary block" disabled={!f.nombre || !Number(f.objetivo)}>Guardar</button>
       </form>
     </Modal>
   );
 }
 
 function AporteForm({ meta, onClose }) {
-  const { yo } = useApp();
-  const [f, setF] = useState({ monto: '', persona: yo, fecha: today(), retiro: false });
+  const { persona, yo } = useApp();
+  const [monto, setMonto] = useState('');
+  const [retiro, setRetiro] = useState(false);
+  const [quien, setQuien] = useState(persona || yo);
   const submit = async (e) => {
     e.preventDefault();
-    const monto = Number(f.monto) * (f.retiro ? -1 : 1);
-    await update('metas', meta.id, { aportes: [...(meta.aportes || []), { monto, persona: f.persona, fecha: f.fecha }] });
+    await update('metas', meta.id, { aportes: [...(meta.aportes || []), { monto: Number(monto) * (retiro ? -1 : 1), persona: quien, fecha: today() }] });
     onClose();
   };
   return (
-    <Modal title={`${meta.emoji} ${meta.nombre}`} onClose={onClose}>
+    <Modal title={`${meta.emoji || '🎯'} ${meta.nombre}`} onClose={onClose}>
       <form className="form" onSubmit={submit}>
-        <Segmented options={[{ value: false, label: '➕ Aportar' }, { value: true, label: '➖ Retirar' }]} value={f.retiro} onChange={(v) => setF({ ...f, retiro: v })} />
-        <Field label="Monto"><input className="big-input" type="number" min="0" inputMode="decimal" value={f.monto} onChange={(e) => setF({ ...f, monto: e.target.value })} required autoFocus /></Field>
-        <div className="grid-2">
-          <Field label="¿Quién?"><Segmented options={[...PERSONAS, 'Compartido']} value={f.persona} onChange={(v) => setF({ ...f, persona: v })} /></Field>
-          <Field label="Fecha"><input type="date" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Field>
-        </div>
-        <button className="btn primary block">Guardar</button>
+        <Segmented options={[{ value: false, label: '➕ Aportar' }, { value: true, label: '➖ Retirar' }]} value={retiro} onChange={setRetiro} />
+        <MoneyInput className="big" value={monto} onChange={setMonto} autoFocus />
+        {duenoMeta(meta) === 'Ambos' && <Segmented options={PERSONAS} value={quien} onChange={setQuien} />}
+        <button className="btn primary block" disabled={!Number(monto)}>Guardar</button>
       </form>
     </Modal>
   );
 }
 
-function ritmoAporte(meta) {
-  const ap = (meta.aportes || []).filter((a) => a.monto > 0);
-  if (!ap.length) return 0;
-  const primero = ap.map((a) => a.fecha).sort()[0].slice(0, 7);
-  const meses = Math.max(1, monthDiff(primero, currentMonth()) + 1);
-  return ap.reduce((a, x) => a + x.monto, 0) / meses;
-}
-
 export default function Metas() {
-  const { data, fmt, config } = useApp();
+  const { data, mes, fmt, persona } = useApp();
   const [edit, setEdit] = useState(null);
   const [aporte, setAporte] = useState(null);
-  const [verHist, setVerHist] = useState(null);
+  const [hist, setHist] = useState(null);
 
-  const metas = [...data.metas].sort((a, b) => estadoMeta(a).completa - estadoMeta(b).completa || (a.fechaLimite || '9').localeCompare(b.fechaLimite || '9'));
-  const total = totalAhorradoMetas(data.metas);
-  const cuotaTotal = data.metas.reduce((a, m) => a + (estadoMeta(m).cuotaMensual || 0), 0);
-  const fijosMes = data.gastosFijos.filter((f) => !f.hasta || f.hasta >= currentMonth()).reduce((a, f) => a + Number(f.monto), 0);
-  const tieneEmergencia = data.metas.some((m) => m.tipo === 'emergencia');
+  const metas = metasDe(data.metas, persona)
+    .sort((a, b) => estadoMeta(a).completa - estadoMeta(b).completa || (a.fechaLimite || '9').localeCompare(b.fechaLimite || '9'));
+  const cuota = cuotaMetas(data.metas, persona, mes);
+  const r = useMemo(() => resumen(data, mes, persona), [data, mes, persona]);
+  const fijos = r.totalFijos;
 
   return (
     <div className="page">
-      <div className="page-head">
-        <h2>Metas de ahorro</h2>
+      <Card className="hero">
+        <span className="muted">Para cumplir {persona ? 'tus' : 'sus'} metas a tiempo hay que apartar</span>
+        <strong className="hero-num">{fmt(cuota)}<small> /mes</small></strong>
+        {r.ingresos > 0 && (
+          <p className="small hero-note">
+            Eso es el {Math.round((cuota / r.ingresos) * 100)}% del ingreso.{' '}
+            {r.disponible >= cuota
+              ? <span className="txt-ok">Con lo que va del mes, alcanza ✅</span>
+              : <span className="txt-danger">Con lo que va del mes faltan {fmt(cuota - r.disponible)}. Mira “Qué recortar” en Inicio.</span>}
+          </p>
+        )}
+        {persona && <p className="small muted">Las metas “Ambos” cuentan la mitad para cada uno.</p>}
         <button className="btn primary" onClick={() => setEdit({})}>+ Nueva meta</button>
-      </div>
+      </Card>
 
-      <div className="stats">
-        <Stat label="Total ahorrado" value={fmt(total)} tone="ok" />
-        <Stat label="Metas activas" value={data.metas.filter((m) => !estadoMeta(m).completa).length} />
-        <Stat label="Necesitan ahorrar" value={fmt(cuotaTotal)} sub="al mes para cumplir a tiempo" />
-      </div>
-
-      {!tieneEmergencia && fijosMes > 0 && (
+      {!metas.some((m) => /emergencia/i.test(m.nombre)) && fijos > 0 && (
         <Card className="highlight">
-          <p>🛟 <b>Consejo:</b> antes que cualquier otra meta, armen un <b>fondo de emergencia</b> de 3 a 6 meses de gastos fijos
-            ({fmt(fijosMes * 3)} – {fmt(fijosMes * 6)}).</p>
-          <button className="btn primary sm" onClick={() => setEdit({ nombre: 'Fondo de emergencia', emoji: '🛟', objetivo: Math.round(fijosMes * 6), tipo: 'emergencia', fechaLimite: `${addMonths(currentMonth(), 12)}-01`, aportes: [] })}>
+          <p className="small">🛟 <b>Consejo:</b> la primera meta debería ser un fondo de emergencia de 3 meses de gastos fijos ({fmt(fijos * 3)}).</p>
+          <button className="btn ghost sm" onClick={() => setEdit({ nombre: 'Fondo de emergencia', emoji: '🛟', objetivo: Math.round(fijos * 3), dueno: persona || 'Ambos', fechaLimite: `${addMonths(mes, 12)}-01`, aportes: [] })}>
             Crear fondo de emergencia
           </button>
         </Card>
       )}
 
-      {metas.length === 0 ? <Card><Empty emoji="🎯">Una meta clara hace más fácil decir “no” a los gastos innecesarios.</Empty></Card> : (
-        <div className="goals">
-          {metas.map((m) => {
-            const e = estadoMeta(m);
-            const ritmo = ritmoAporte(m);
-            const mesesAlRitmo = ritmo > 0 ? Math.ceil(e.falta / ritmo) : null;
-            const vaTarde = e.mesesRestantes && mesesAlRitmo && mesesAlRitmo > e.mesesRestantes;
-            return (
-              <Card key={m.id} className={`goal ${e.completa ? 'complete' : ''}`}>
-                <div className="goal-head">
-                  <span className="goal-emoji">{m.emoji || '🎯'}</span>
-                  <div className="grow">
-                    <h3>{m.nombre}</h3>
-                    <small className="muted">{m.fechaLimite ? `Para ${dateLabel(m.fechaLimite)}` : 'Sin fecha límite'}</small>
-                  </div>
-                  <button className="icon-btn" onClick={() => setEdit(m)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn danger" onClick={() => confirmar() && remove('metas', m.id)} aria-label="Eliminar">🗑</button>
-                </div>
-                <div className="goal-amount"><strong>{fmt(e.ahorrado)}</strong> <span className="muted">de {fmt(e.objetivo)}</span></div>
-                <Progress value={e.progreso} color={e.completa ? 'var(--ok)' : 'var(--accent)'} />
-                <div className="row-between small"><span>{Math.round(e.progreso * 100)}%</span><span>Faltan {fmt(e.falta)}</span></div>
-                {e.completa ? <p className="txt-ok">🎉 ¡Meta cumplida!</p> : (
-                  <ul className="goal-facts">
-                    {e.cuotaMensual != null && <li>Deben ahorrar <b>{fmt(e.cuotaMensual)}/mes</b> durante {e.mesesRestantes} meses</li>}
-                    {ritmo > 0 && <li>A su ritmo actual ({fmt(ritmo)}/mes) la cumplen en <b>{monthLabel(addMonths(currentMonth(), mesesAlRitmo))}</b></li>}
-                    {vaTarde && <li className="txt-warn">⚠️ A este ritmo no llegan a tiempo</li>}
-                    {e.aportesMes > 0 && <li>Este mes han aportado {fmt(e.aportesMes)}</li>}
-                  </ul>
-                )}
-                <div className="row gap">
-                  <button className="btn primary sm" onClick={() => setAporte(m)}>+ Aportar</button>
-                  {(m.aportes || []).length > 0 && <button className="btn ghost sm" onClick={() => setVerHist(verHist === m.id ? null : m.id)}>Historial</button>}
-                </div>
-                {verHist === m.id && (
-                  <ul className="list compact hist">
-                    {[...(m.aportes || [])].reverse().map((a, i) => (
-                      <li key={i}>
-                        <PersonaTag p={a.persona} />
-                        <span className="grow muted">{dateLabel(a.fecha)}</span>
-                        <strong className={a.monto < 0 ? 'txt-danger' : 'txt-ok'}>{a.monto > 0 ? '+' : ''}{fmt(a.monto)}</strong>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      {metas.length === 0 ? <Card><Empty emoji="🎯">Aún no hay metas.</Empty></Card> : metas.map((m) => {
+        const e = estadoMeta(m, mes);
+        return (
+          <Card key={m.id} className={`goal ${e.completa ? 'complete' : ''}`}>
+            <div className="goal-head">
+              <span className="goal-emoji">{m.emoji || '🎯'}</span>
+              <div className="grow">
+                <h3>{m.nombre}</h3>
+                <small className="muted">{m.fechaLimite ? `Para el ${dateLabel(m.fechaLimite)}` : 'Sin fecha'} · </small><PersonaTag p={duenoMeta(m)} />
+              </div>
+              <button className="icon-btn" onClick={() => setEdit(m)} aria-label="Editar">✏️</button>
+              <button className="icon-btn danger" onClick={() => confirmar() && remove('metas', m.id)} aria-label="Eliminar">🗑</button>
+            </div>
+            <div className="row-between"><strong className="goal-amount">{fmt(e.ahorrado)}</strong><span className="muted small">de {fmt(e.objetivo)} · {Math.round(e.progreso * 100)}%</span></div>
+            <Progress value={e.progreso} color={e.completa ? 'var(--ok)' : 'var(--accent)'} />
+            {e.completa ? <p className="txt-ok">🎉 ¡Meta cumplida!</p> : (
+              <p className="small">
+                {e.cuotaMensual != null
+                  ? <>Apartar <b>{fmt(e.cuotaMensual)}</b> al mes durante {e.mesesRestantes} {e.mesesRestantes === 1 ? 'mes' : 'meses'} (hasta {monthLabel(m.fechaLimite.slice(0, 7))}).</>
+                  : <>Faltan {fmt(e.falta)}. Pónganle fecha para saber cuánto apartar al mes.</>}
+                {e.aportesMes > 0 && <> Este mes: +{fmt(e.aportesMes)}.</>}
+              </p>
+            )}
+            <div className="row gap">
+              <button className="btn primary sm" onClick={() => setAporte(m)}>+ Aportar</button>
+              {(m.aportes || []).length > 0 && <button className="btn ghost sm" onClick={() => setHist(hist === m.id ? null : m.id)}>Historial</button>}
+            </div>
+            {hist === m.id && (
+              <ul className="list compact">
+                {[...(m.aportes || [])].reverse().map((a, i) => (
+                  <li key={i}><PersonaTag p={a.persona} /><span className="grow muted">{dateLabel(a.fecha)}</span>
+                    <strong className={a.monto < 0 ? 'txt-danger' : 'txt-ok'}>{a.monto > 0 ? '+' : ''}{fmt(a.monto)}</strong></li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        );
+      })}
 
-      {edit && <MetaForm meta={edit.id ? edit : (Object.keys(edit).length ? edit : null)} onClose={() => setEdit(null)} />}
+      {edit && <MetaForm meta={edit.id || edit.nombre ? edit : null} onClose={() => setEdit(null)} />}
       {aporte && <AporteForm meta={aporte} onClose={() => setAporte(null)} />}
-      <p className="muted small center">Ahorro objetivo del hogar: {config.metaAhorroPct}% del ingreso (se cambia en Ajustes).</p>
     </div>
   );
 }

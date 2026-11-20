@@ -11,9 +11,7 @@ import {
 import { db, firebaseConfigured } from './firebase';
 
 export const HOGAR = 'stephania-santiago';
-export const COLECCIONES = [
-  'salarios', 'ingresos', 'gastos', 'gastosFijos', 'presupuestos', 'metas', 'aspiraciones', 'config',
-];
+export const COLECCIONES = ['salarios', 'ingresos', 'gastos', 'gastosFijos', 'metas', 'config'];
 
 const colRef = (name) => collection(db, 'hogares', HOGAR, name);
 const docRef = (name, id) => doc(db, 'hogares', HOGAR, name, id);
@@ -98,4 +96,19 @@ export function useCollection(name) {
   const [state, setState] = useState({ items: [], loading: true, error: null });
   useEffect(() => subscribe(name, (items, error) => setState({ items, loading: false, error: error || null })), [name]);
   return state;
+}
+
+/** Borra varios documentos de una colección. */
+export async function removeMany(name, ids) {
+  if (!ids.length) return;
+  if (firebaseConfigured) {
+    for (let i = 0; i < ids.length; i += 400) {
+      const batch = writeBatch(db);
+      ids.slice(i, i + 400).forEach((id) => batch.delete(docRef(name, id)));
+      await batch.commit();
+    }
+  } else {
+    const set_ = new Set(ids);
+    writeLocal(name, readLocal(name).filter((it) => !set_.has(it.id)));
+  }
 }

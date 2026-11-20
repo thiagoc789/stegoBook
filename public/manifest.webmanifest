@@ -1,0 +1,31 @@
+{
+  "name": "StegoBook · Finanzas",
+  "short_name": "StegoBook",
+  "description": "Finanzas de Stephania y Santiago",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f4fb",
+  "theme_color": "#7c5cff",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Gasto rápido",
+      "short_name": "Gasto",
+      "description": "Registrar un gasto",
+      "url": "./?rapido=1",
+      "icons": [{ "src": "icon-gasto.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Ver gastos del mes",
+      "short_name": "Gastos",
+      "url": "./#movimientos",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
