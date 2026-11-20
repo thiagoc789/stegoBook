@@ -11,6 +11,17 @@ import {
 } from '../components/ui';
 
 const EMOJIS = ['🎯', '🛟', '🏠', '✈️', '🚗', '💍', '🎓', '💻', '🎄', '🏖️', '🐶', '💰'];
+const PERIODO = { semestral: 6, anual: 12 };
+const mover = (fecha, n) => `${addMonths(fecha.slice(0, 7), n)}${fecha.slice(7) || '-01'}`;
+
+function plantillas(persona) {
+  const y = new Date().getFullYear();
+  return [
+    { nombre: 'Universidad', emoji: '🎓', objetivo: 3000000, fechaLimite: `${y + 1}-02-01`, dueno: persona || 'Stephania', repetir: 'semestral', aportes: [] },
+    { nombre: 'Irnos a vivir juntos', emoji: '🏠', objetivo: 8000000, fechaLimite: `${y + 1}-12-01`, dueno: 'Ambos', repetir: '', aportes: [] },
+    { nombre: 'Fondo de emergencia', emoji: '🛟', objetivo: 5000000, fechaLimite: `${y + 1}-12-01`, dueno: persona || 'Ambos', repetir: '', aportes: [] },
+  ];
+}
 
 function MetaForm({ meta, onClose }) {
   const { persona, yo } = useApp();
@@ -36,6 +47,10 @@ function MetaForm({ meta, onClose }) {
         <Field label="¿Cuánto necesitan?"><MoneyInput value={f.objetivo} onChange={s('objetivo')} required /></Field>
         <Field label="¿Para cuándo?" hint="Con la fecha calculamos cuánto apartar cada mes.">
           <input type="date" value={f.fechaLimite} onChange={s('fechaLimite')} />
+        </Field>
+        <Field label="¿Se repite?" hint={f.repetir ? 'Al cumplirla (o al llegar la fecha) arranca la siguiente con el mismo monto.' : undefined}>
+          <Segmented options={[{ value: '', label: 'No' }, { value: 'semestral', label: 'Cada semestre' }, { value: 'anual', label: 'Cada año' }]}
+            value={f.repetir || ''} onChange={s('repetir')} />
         </Field>
         <button className="btn primary block" disabled={!f.nombre || !Number(f.objetivo)}>Guardar</button>
       </form>
@@ -92,6 +107,11 @@ export default function Metas() {
         )}
         {persona && <p className="small muted">Las metas “Ambos” cuentan la mitad para cada uno.</p>}
         <button className="btn primary" onClick={() => setEdit({})}>+ Nueva meta</button>
+        <div className="atajos">
+          {plantillas(persona).filter((p) => !data.metas.some((m) => m.nombre === p.nombre)).map((p) => (
+            <button key={p.nombre} type="button" onClick={() => setEdit(p)}>{p.emoji} {p.nombre}</button>
+          ))}
+        </div>
       </Card>
 
       {!metas.some((m) => /emergencia/i.test(m.nombre)) && fijos > 0 && (
@@ -125,6 +145,19 @@ export default function Metas() {
                   : <>Faltan {fmt(e.falta)}. Pónganle fecha para saber cuánto apartar al mes.</>}
                 {e.aportesMes > 0 && <> Este mes: +{fmt(e.aportesMes)}.</>}
               </p>
+            )}
+            {m.repetir && (
+              <p className="ciclos">🔁 Se repite {m.repetir === 'semestral' ? 'cada semestre' : 'cada año'}
+                {(m.ciclos || []).length > 0 && ` · ${m.ciclos.length} ${m.ciclos.length === 1 ? 'ciclo cumplido' : 'ciclos cumplidos'}`}</p>
+            )}
+            {m.repetir && m.fechaLimite && (e.completa || m.fechaLimite <= today()) && (
+              <button className="btn ghost sm" onClick={() => confirmar(`¿Empezar a ahorrar para el siguiente ${m.repetir === 'semestral' ? 'semestre' : 'año'}? Lo ahorrado se guarda en el historial y la meta arranca en cero para el ${dateLabel(mover(m.fechaLimite, PERIODO[m.repetir]))}.`)
+                && update('metas', m.id, {
+                  fechaLimite: mover(m.fechaLimite, PERIODO[m.repetir]), aportes: [],
+                  ciclos: [...(m.ciclos || []), { hasta: m.fechaLimite, ahorrado: e.ahorrado }],
+                })}>
+                🔁 Empezar el siguiente {m.repetir === 'semestral' ? 'semestre' : 'año'}
+              </button>
             )}
             <div className="row gap">
               <button className="btn primary sm" onClick={() => setAporte(m)}>+ Aportar</button>

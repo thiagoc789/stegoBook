@@ -11,10 +11,11 @@ Arriba eligen **Stephania**, **Santiago** o **Juntos**. Cada uno lleva sus propi
 
 | Pestaña | Qué hace |
 |---|---|
-| 🏠 **Inicio** | Cuánto queda del mes y cuánto se puede gastar por día · **qué recortar** para cumplir las metas · necesidades vs. gustos · en qué se va la plata |
+| 🏠 **Inicio** | **Tope semanal de gustos** de cada uno (promedio de gustos − % de recorte, limitado a lo que alcanza tras fijos, deudas, necesidades y metas) · cuánto queda del mes y cuánto se puede gastar por día · **qué recortar** para cumplir las metas · necesidades vs. gustos · en qué se va la plata |
 | 🧾 **Gastos** | Los gastos del mes, filtrables por necesidad/gusto y categoría. Toca uno para editarlo |
 | ＋ | **Gasto rápido**: monto → concepto (o un atajo) → guardar. La categoría y si es necesidad o gusto se ponen solos (palabras clave como “Rappi”, “D1”, “Uber” y lo que hayan registrado antes) |
-| 🎯 **Metas** | Metas de cada uno o de los dos, cuánto apartar al mes y si les alcanza |
+| 🎯 **Metas** | Metas de cada uno o de los dos, cuánto apartar al mes y si les alcanza. Pueden repetirse cada semestre o año (ej. 🎓 Universidad) |
+| 💳 **Deudas** | Tarjetas, créditos y préstamos: saldo estimado mes a mes, fecha en que terminan, intereses, plan avalancha + bola de nieve con simulador de abonos extra. Las cuotas se suman solas a los gastos fijos |
 | 💼 **Mi plata** | Salario, ingresos extra, gastos fijos, acceso rápido y ajustes |
 
 ### Acceso rápido (tipo widget)
@@ -81,8 +82,9 @@ hogares/stephania-santiago/
   ingresos/      { persona, concepto, monto, fecha }
   gastos/        { persona, concepto, monto, categoria, tipo: necesidad|gusto, fecha }
   gastosFijos/   { persona, concepto, monto, categoria, tipo, desde, hasta }
-  metas/         { nombre, emoji, objetivo, fechaLimite, dueno: Stephania|Santiago|Ambos, aportes: [{ monto, persona, fecha }] }
-  config/general { moneda }
+  metas/         { nombre, emoji, objetivo, fechaLimite, dueno: Stephania|Santiago|Ambos, repetir: ''|semestral|anual, aportes: [...], ciclos: [...] }
+  deudas/        { persona, tipo, nombre, saldo, saldoOriginal, cuota, tasaEA, desde, fechaSaldo, saldoActualizado, abonos: [{ monto, fecha, creado }] }
+  config/general { moneda, topes: { Stephania: { recorte }, Santiago: { recorte } } }
 ```
 
 ## Despliegue automático (CI/CD)

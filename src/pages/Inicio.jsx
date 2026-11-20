@@ -6,6 +6,7 @@ import {
 import { COLOR_PERSONA, infoCategoria, PERSONAS } from '../lib/constants';
 import { pct } from '../lib/format';
 import { Card, Empty, PersonaTag, Progress, TextoMonto } from '../components/ui';
+import TopeGustos from '../components/TopeGustos';
 
 const ICON = { ok: '✅', alerta: '⚠️', peligro: '🚨', info: '💡', recorte: '✂️' };
 
@@ -151,6 +152,7 @@ export default function Inicio({ go }) {
           <button className="btn primary sm" onClick={() => go('miplata')}>Ir a Mi plata</button>
         </Card>
       )}
+      <TopeGustos />
       <Hero r={r} cuota={cuota} />
       <Recortar tips={tips} />
       <NecesidadGusto r={r} />

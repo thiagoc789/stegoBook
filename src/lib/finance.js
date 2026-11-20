@@ -1,5 +1,6 @@
 import { CATEGORIAS, infoCategoria } from './constants';
 import { addMonths, currentMonth, daysInMonth, monthDiff } from './format';
+import { abonosEn, cuotaEn } from './deudas';
 
 const num = (v) => Number(v) || 0;
 const sum = (arr, f = (x) => x) => arr.reduce((a, x) => a + num(f(x)), 0);
@@ -27,7 +28,17 @@ export function resumen(data, mes, persona = null) {
   const de = (x) => !persona || personaDe(x) === persona;
   const salarios = data.salarios.filter(de).filter((s) => activoEn(s, mes));
   const extras = data.ingresos.filter(de).filter((i) => (i.fecha || '').startsWith(mes));
-  const fijos = data.gastosFijos.filter(de).filter((f) => fijoAplicaEn(f, mes));
+  // las cuotas y abonos de las deudas cuentan como gastos fijos (categoría Deudas)
+  const deudasMes = (data.deudas || []).filter(de).flatMap((d) => {
+    const base = { persona: personaDe(d), categoria: 'Deudas', tipo: 'necesidad', esDeuda: true };
+    const out = [];
+    const cuota = cuotaEn(d, mes);
+    if (cuota > 0) out.push({ ...base, id: `deuda-${d.id}`, concepto: `Cuota ${d.nombre}`, monto: cuota });
+    const abono = abonosEn(d, mes);
+    if (abono > 0) out.push({ ...base, id: `abono-${d.id}`, concepto: `Abono extra ${d.nombre}`, monto: abono });
+    return out;
+  });
+  const fijos = [...data.gastosFijos.filter(de).filter((f) => fijoAplicaEn(f, mes)), ...deudasMes];
   const variables = data.gastos.filter(de).filter((g) => (g.fecha || '').startsWith(mes));
 
   const ingresos = sum(salarios, (s) => s.monto) + sum(extras, (i) => i.monto);

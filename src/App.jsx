@@ -9,18 +9,21 @@ import Inicio from './pages/Inicio';
 import Movimientos from './pages/Movimientos';
 import Metas from './pages/Metas';
 import MiPlata from './pages/MiPlata';
+import Deudas from './pages/Deudas';
+import { topeGustos } from './lib/topes';
 
 const PAGES = [
   { id: 'inicio', label: 'Inicio', icon: '🏠', C: Inicio },
   { id: 'movimientos', label: 'Gastos', icon: '🧾', C: Movimientos },
   { id: 'metas', label: 'Metas', icon: '🎯', C: Metas },
+  { id: 'deudas', label: 'Deudas', icon: '💳', C: Deudas },
   { id: 'miplata', label: 'Mi plata', icon: '💼', C: MiPlata },
 ];
 const pageFromHash = () => PAGES.find((p) => `#${p.id}` === window.location.hash)?.id || 'inicio';
 const abrirRapido = new URLSearchParams(window.location.search).has('rapido');
 
 export default function App() {
-  const { loading, error, vista, setVista, fmt } = useApp();
+  const { loading, error, vista, setVista, fmt, data, config } = useApp();
   const [page, setPage] = useState(pageFromHash);
   const [quick, setQuick] = useState(abrirRapido);
   const [toast, setToast] = useState(null);
@@ -64,19 +67,24 @@ export default function App() {
       </main>
 
       <nav className="bottom-nav">
-        {PAGES.slice(0, 2).map((p) => (
-          <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
-        ))}
-        <button className="fab" onClick={() => setQuick(true)} aria-label="Agregar gasto">＋</button>
-        {PAGES.slice(2).map((p) => (
+        {PAGES.map((p) => (
           <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
         ))}
       </nav>
+      <button className="fab" onClick={() => setQuick(true)} aria-label="Agregar gasto">＋</button>
 
       {quick && !loading && (
         <QuickAdd
           onClose={() => setQuick(false)}
-          onSaved={(g) => setToast(`✓ ${fmt(g.monto)} · ${infoCategoria(g.categoria).emoji} ${g.categoria} (${g.tipo})`)}
+          onSaved={(g, editando) => {
+            let msg = `✓ ${fmt(g.monto)} · ${infoCategoria(g.categoria).emoji} ${g.categoria} (${g.tipo})`;
+            const t = topeGustos(data, g.persona, config);
+            if (g.tipo === 'gusto' && !editando && g.fecha >= t.semana.inicio && g.fecha <= t.semana.fin && t.semanal > 0) {
+              const queda = t.quedaSemana - g.monto;
+              msg += queda >= 0 ? ` · te quedan ${fmt(queda)} de gustos esta semana` : ` · ⚠️ te pasaste ${fmt(-queda)} del tope semanal`;
+            }
+            setToast(msg);
+          }}
         />
       )}
       {toast && <div className="toast">{toast}</div>}

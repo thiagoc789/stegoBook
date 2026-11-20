@@ -72,7 +72,7 @@ export default function QuickAdd({ gasto, onClose, onSaved }) {
     try {
       if (editando) await update('gastos', gasto.id, payload);
       else await add('gastos', payload);
-      onSaved?.(payload);
+      onSaved?.(payload, editando);
       onClose();
     } catch (err) {
       alert(`No se pudo guardar: ${err.message}`);

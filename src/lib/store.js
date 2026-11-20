@@ -11,7 +11,7 @@ import {
 import { db, firebaseConfigured } from './firebase';
 
 export const HOGAR = 'stephania-santiago';
-export const COLECCIONES = ['salarios', 'ingresos', 'gastos', 'gastosFijos', 'metas', 'config'];
+export const COLECCIONES = ['salarios', 'ingresos', 'gastos', 'gastosFijos', 'metas', 'deudas', 'config'];
 
 const colRef = (name) => collection(db, 'hogares', HOGAR, name);
 const docRef = (name, id) => doc(db, 'hogares', HOGAR, name, id);

@@ -87,6 +87,7 @@ function FijoForm({ persona, fijo, onClose }) {
         </Field>
         <Segmented options={[{ value: 'necesidad', label: '✅ Necesidad' }, { value: 'gusto', label: '✨ Gusto' }]} value={f.tipo}
           onChange={(v) => { setAuto(false); setF({ ...f, tipo: v }); }} />
+        {f.categoria === 'Deudas' && <p className="small txt-warn">💳 Las cuotas de créditos, tarjetas y préstamos agrégalas en la pestaña Deudas: allá se suman solas a tus fijos y ves cuándo terminas.</p>}
         <button className="btn primary block" disabled={!f.concepto || !Number(f.monto)}>Guardar</button>
       </form>
     </Modal>
