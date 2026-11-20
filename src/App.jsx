@@ -10,6 +10,7 @@ import Movimientos from './pages/Movimientos';
 import Metas from './pages/Metas';
 import MiPlata from './pages/MiPlata';
 import Deudas from './pages/Deudas';
+import Casa from './pages/Casa';
 import { topeGustos } from './lib/topes';
 
 const PAGES = [
@@ -18,6 +19,7 @@ const PAGES = [
   { id: 'metas', label: 'Metas', icon: '🎯', C: Metas },
   { id: 'deudas', label: 'Deudas', icon: '💳', C: Deudas },
   { id: 'miplata', label: 'Mi plata', icon: '💼', C: MiPlata },
+  { id: 'casa', label: 'Vivir juntos', icon: '🏠', C: Casa, oculta: true },
 ];
 const pageFromHash = () => PAGES.find((p) => `#${p.id}` === window.location.hash)?.id || 'inicio';
 const abrirRapido = new URLSearchParams(window.location.search).has('rapido');
@@ -67,8 +69,8 @@ export default function App() {
       </main>
 
       <nav className="bottom-nav">
-        {PAGES.map((p) => (
-          <button key={p.id} className={page === p.id ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
+        {PAGES.filter((p) => !p.oculta).map((p) => (
+          <button key={p.id} className={page === p.id || (p.id === 'metas' && page === 'casa') ? 'active' : ''} onClick={() => go(p.id)}><span>{p.icon}</span><small>{p.label}</small></button>
         ))}
       </nav>
       <button className="fab" onClick={() => setQuick(true)} aria-label="Agregar gasto">＋</button>

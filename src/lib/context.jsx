@@ -18,6 +18,7 @@ export function DataProvider({ children }) {
   const gastosFijos = useCollection('gastosFijos');
   const metas = useCollection('metas');
   const deudas = useCollection('deudas');
+  const casaItems = useCollection('casaItems');
   const configCol = useCollection('config');
 
   const [mes, setMes] = useState(currentMonth());
@@ -30,7 +31,7 @@ export function DataProvider({ children }) {
   const [vista, setVista] = useState(yo);
   const setYo = (p) => { setYoState(p); ls.set('stegobook:yo', p); setVista(p); };
 
-  const all = [salarios, ingresos, gastos, gastosFijos, metas, deudas, configCol];
+  const all = [salarios, ingresos, gastos, gastosFijos, metas, deudas, casaItems, configCol];
   const loading = all.some((c) => c.loading);
   const error = all.find((c) => c.error)?.error || null;
 
@@ -39,15 +40,16 @@ export function DataProvider({ children }) {
     return {
       data: {
         salarios: salarios.items, ingresos: ingresos.items, gastos: gastos.items,
-        gastosFijos: gastosFijos.items, metas: metas.items, deudas: deudas.items,
+        gastosFijos: gastosFijos.items, metas: metas.items, deudas: deudas.items, casaItems: casaItems.items,
       },
       config,
+      casa: configCol.items.find((c) => c.id === 'casa') || null,
       fmt: (n, compact) => money(n, config.moneda, compact),
       mes, setMes, yo, setYo, vista, setVista,
       persona: vista === JUNTOS ? null : vista, // null = los dos
       loading, error,
     };
-  }, [salarios.items, ingresos.items, gastos.items, gastosFijos.items, metas.items, deudas.items, configCol.items, mes, yo, vista, loading, error]);
+  }, [salarios.items, ingresos.items, gastos.items, gastosFijos.items, metas.items, deudas.items, casaItems.items, configCol.items, mes, yo, vista, loading, error]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

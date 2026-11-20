@@ -186,3 +186,19 @@ h4.sub { margin: 14px 0 6px; font-size: .86rem; color: var(--muted); }
 .orden .num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
 .orden .right { text-align: right; }
 .ciclos { font-size: .8rem; color: var(--muted); }
+
+/* plan casa */
+.cap { text-transform: capitalize; }
+.aporte-p { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: .86rem; }
+.aporte-p b { font-size: 1.05rem; }
+.estado { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); flex-shrink: 0; display: grid; place-items: center; font-size: .8rem; padding: 0; }
+.estado.e-comprado { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 700; }
+.estado.e-tengo { border-color: var(--accent); background: var(--accent-soft); }
+.item-name { background: none; border: 0; text-align: left; padding: 4px 0; font-size: .9rem; min-width: 0; }
+.list li.done .item-name { text-decoration: line-through; color: var(--muted); }
+.tachado { text-decoration: line-through; color: var(--muted); }
+.casa-cat h4.sub { margin-top: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.casa-link .goal-emoji { width: 42px; height: 42px; }
+.segmented button { min-width: 0; white-space: normal; line-height: 1.2; }
+.card { overflow-wrap: anywhere; }

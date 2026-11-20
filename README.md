@@ -15,6 +15,7 @@ Arriba eligen **Stephania**, **Santiago** o **Juntos**. Cada uno lleva sus propi
 | 🧾 **Gastos** | Los gastos del mes, filtrables por necesidad/gusto y categoría. Toca uno para editarlo |
 | ＋ | **Gasto rápido**: monto → concepto (o un atajo) → guardar. La categoría y si es necesidad o gusto se ponen solos (palabras clave como “Rappi”, “D1”, “Uber” y lo que hayan registrado antes) |
 | 🎯 **Metas** | Metas de cada uno o de los dos, cuánto apartar al mes y si les alcanza. Pueden repetirse cada semestre o año (ej. 🎓 Universidad) |
+| 🏠 **Vivir juntos** (desde Metas) | Lista de lo indispensable para la casa con precios editables (falta / comprado / ya lo tenemos), arriendo adelantado, colchón de un mes, costo mensual juntos vs. hoy, aporte de cada uno y fecha estimada (también sumando lo que liberan las deudas). Sincroniza la meta “Irnos a vivir juntos” |
 | 💳 **Deudas** | Tarjetas, créditos y préstamos: saldo estimado mes a mes, fecha en que terminan, intereses, plan avalancha + bola de nieve con simulador de abonos extra. Las cuotas se suman solas a los gastos fijos |
 | 💼 **Mi plata** | Salario, ingresos extra, gastos fijos, acceso rápido y ajustes |
 
@@ -84,6 +85,8 @@ hogares/stephania-santiago/
   gastosFijos/   { persona, concepto, monto, categoria, tipo, desde, hasta }
   metas/         { nombre, emoji, objetivo, fechaLimite, dueno: Stephania|Santiago|Ambos, repetir: ''|semestral|anual, aportes: [...], ciclos: [...] }
   deudas/        { persona, tipo, nombre, saldo, saldoOriginal, cuota, tasaEA, desde, fechaSaldo, saldoActualizado, abonos: [{ monto, fecha, creado }] }
+  casaItems/     { nombre, categoria, costo, prioridad: indispensable|despues, estado: pendiente|comprado|tengo }
+  config/casa    { arriendo, administracion, servicios, internet, mercado, mesesAdelanto, colchon, ahorroMensual, reparto, metaId }
   config/general { moneda, topes: { Stephania: { recorte }, Santiago: { recorte } } }
 ```
 

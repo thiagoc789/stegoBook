@@ -18,7 +18,6 @@ function plantillas(persona) {
   const y = new Date().getFullYear();
   return [
     { nombre: 'Universidad', emoji: '🎓', objetivo: 3000000, fechaLimite: `${y + 1}-02-01`, dueno: persona || 'Stephania', repetir: 'semestral', aportes: [] },
-    { nombre: 'Irnos a vivir juntos', emoji: '🏠', objetivo: 8000000, fechaLimite: `${y + 1}-12-01`, dueno: 'Ambos', repetir: '', aportes: [] },
     { nombre: 'Fondo de emergencia', emoji: '🛟', objetivo: 5000000, fechaLimite: `${y + 1}-12-01`, dueno: persona || 'Ambos', repetir: '', aportes: [] },
   ];
 }
@@ -58,7 +57,7 @@ function MetaForm({ meta, onClose }) {
   );
 }
 
-function AporteForm({ meta, onClose }) {
+export function AporteForm({ meta, onClose }) {
   const { persona, yo } = useApp();
   const [monto, setMonto] = useState('');
   const [retiro, setRetiro] = useState(false);
@@ -80,8 +79,8 @@ function AporteForm({ meta, onClose }) {
   );
 }
 
-export default function Metas() {
-  const { data, mes, fmt, persona } = useApp();
+export default function Metas({ go }) {
+  const { data, mes, fmt, persona, casa } = useApp();
   const [edit, setEdit] = useState(null);
   const [aporte, setAporte] = useState(null);
   const [hist, setHist] = useState(null);
@@ -112,6 +111,17 @@ export default function Metas() {
             <button key={p.nombre} type="button" onClick={() => setEdit(p)}>{p.emoji} {p.nombre}</button>
           ))}
         </div>
+      </Card>
+
+      <Card className="highlight casa-link">
+        <div className="row gap">
+          <span className="goal-emoji">🏠</span>
+          <div className="grow">
+            <h3>Plan: irnos a vivir juntos</h3>
+            <p className="small muted">{casa ? 'Lista de la casa, arriendo y fecha estimada.' : 'Qué necesitan, cuánto cuesta y cuándo lo tendrían.'}</p>
+          </div>
+        </div>
+        <button className="btn primary sm" onClick={() => go('casa')}>{casa ? 'Abrir plan →' : 'Armar el plan →'}</button>
       </Card>
 
       {!metas.some((m) => /emergencia/i.test(m.nombre)) && fijos > 0 && (
@@ -161,6 +171,7 @@ export default function Metas() {
             )}
             <div className="row gap">
               <button className="btn primary sm" onClick={() => setAporte(m)}>+ Aportar</button>
+              {m.casa && <button className="btn ghost sm" onClick={() => go('casa')}>Ver plan 🏠</button>}
               {(m.aportes || []).length > 0 && <button className="btn ghost sm" onClick={() => setHist(hist === m.id ? null : m.id)}>Historial</button>}
             </div>
             {hist === m.id && (
