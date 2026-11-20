@@ -1,5 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+} from 'firebase/firestore';
 
 // La configuración web de Firebase es pública por diseño (va dentro de la app);
 // lo que protege los datos son las reglas de firestore.rules.
@@ -17,4 +19,14 @@ const config = {
 // VITE_LOCAL=1 fuerza el modo local (localStorage), útil para pruebas sin tocar los datos reales.
 export const firebaseConfigured = env.VITE_LOCAL !== '1' && Boolean(config.apiKey && config.projectId);
 
-export const db = firebaseConfigured ? getFirestore(initializeApp(config)) : null;
+function crearDb() {
+  const app = initializeApp(config);
+  try {
+    // Caché en el celular: abre más rápido y guarda aunque no haya internet (se sincroniza después)
+    return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db = firebaseConfigured ? crearDb() : null;

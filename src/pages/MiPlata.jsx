@@ -10,7 +10,7 @@ import {
 } from '../components/ui';
 
 function SalarioForm({ persona, salario, onClose }) {
-  const { mes } = useApp();
+  const { mes, fmt: fmtMonto } = useApp();
   const [concepto, setConcepto] = useState(salario?.concepto || 'Salario');
   const [monto, setMonto] = useState(salario?.monto || '');
   const submit = async (e) => {
@@ -34,6 +34,11 @@ function SalarioForm({ persona, salario, onClose }) {
         <Field label="Concepto"><input value={concepto} onChange={(e) => setConcepto(e.target.value)} /></Field>
         {salario && <p className="small muted">Si cambias el monto, aplica desde {monthLabel(mes)}; los meses anteriores no cambian.</p>}
         <button className="btn primary block" disabled={!Number(monto)}>Guardar</button>
+        {salario && (
+          <button type="button" className="btn ghost block danger-txt" onClick={() => { if (confirmar(`¿Eliminar "${salario.concepto}" de ${fmtMonto(salario.monto)}? Se borra de todos los meses.`)) { remove('salarios', salario.id); onClose(); } }}>
+            Eliminar este ingreso
+          </button>
+        )}
       </form>
     </Modal>
   );
@@ -184,6 +189,8 @@ export default function MiPlata() {
                 <span className="cat-dot" style={{ '--c': '#10b981' }}>💼</span>
                 <div className="grow"><b>{s.concepto}</b><small>Toca para cambiar el monto</small></div>
                 <strong className="txt-ok">{fmt(s.monto)}</strong>
+                <button className="icon-btn danger" aria-label="Eliminar"
+                  onClick={(e) => { e.stopPropagation(); if (confirmar(`¿Eliminar "${s.concepto}" de ${fmt(s.monto)}? Se borra de todos los meses.`)) remove('salarios', s.id); }}>🗑</button>
               </li>
             ))}
           </ul>

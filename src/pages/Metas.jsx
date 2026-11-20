@@ -17,7 +17,7 @@ const mover = (fecha, n) => `${addMonths(fecha.slice(0, 7), n)}${fecha.slice(7) 
 function plantillas(persona) {
   const y = new Date().getFullYear();
   return [
-    { nombre: 'Universidad', emoji: '🎓', objetivo: 3000000, fechaLimite: `${y + 1}-02-01`, dueno: persona || 'Stephania', repetir: 'semestral', aportes: [] },
+    { nombre: 'Universidad', emoji: '🎓', objetivo: 3000000, fechaLimite: `${y + 1}-02-01`, dueno: 'Stephania', repetir: 'semestral', aportes: [] },
     { nombre: 'Fondo de emergencia', emoji: '🛟', objetivo: 5000000, fechaLimite: `${y + 1}-12-01`, dueno: persona || 'Ambos', repetir: '', aportes: [] },
   ];
 }

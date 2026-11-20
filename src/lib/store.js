@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, writeBatch,
+  collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, writeBatch,
 } from 'firebase/firestore';
 import { db, firebaseConfigured } from './firebase';
 
@@ -45,9 +45,30 @@ export function subscribe(name, cb) {
   return () => listeners.set(name, (listeners.get(name) || []).filter((f) => f !== cb));
 }
 
+/*
+ * Las escrituras NO esperan al servidor: Firestore las aplica al instante en el
+ * celular (y la pantalla se actualiza) y las sincroniza por detrás. Así los
+ * formularios se cierran de una y no se duplican registros con internet lento.
+ * Si el servidor rechaza algo, se avisa.
+ */
+let avisado = 0;
+function enSegundoPlano(promesa, que) {
+  promesa.catch((err) => {
+    console.error(`Error guardando ${que}`, err);
+    if (Date.now() - avisado > 4000) {
+      avisado = Date.now();
+      window.alert(`No se pudo guardar en la nube (${que}): ${err.message}`);
+    }
+  });
+}
+
 export async function add(name, data) {
   const payload = clean({ ...data, creado: new Date().toISOString() });
-  if (firebaseConfigured) return (await addDoc(colRef(name), payload)).id;
+  if (firebaseConfigured) {
+    const ref = doc(colRef(name));
+    enSegundoPlano(setDoc(ref, payload), name);
+    return ref.id;
+  }
   const id = uid();
   writeLocal(name, [...readLocal(name), { id, ...payload }]);
   return id;
@@ -55,13 +76,13 @@ export async function add(name, data) {
 
 export async function update(name, id, data) {
   const payload = clean(data);
-  if (firebaseConfigured) return updateDoc(docRef(name, id), payload);
+  if (firebaseConfigured) return enSegundoPlano(updateDoc(docRef(name, id), payload), name);
   writeLocal(name, readLocal(name).map((it) => (it.id === id ? { ...it, ...payload } : it)));
 }
 
 export async function set(name, id, data) {
   const payload = clean(data);
-  if (firebaseConfigured) return setDoc(docRef(name, id), payload, { merge: true });
+  if (firebaseConfigured) return enSegundoPlano(setDoc(docRef(name, id), payload, { merge: true }), name);
   const items = readLocal(name);
   const exists = items.some((it) => it.id === id);
   writeLocal(name, exists
@@ -70,7 +91,7 @@ export async function set(name, id, data) {
 }
 
 export async function remove(name, id) {
-  if (firebaseConfigured) return deleteDoc(docRef(name, id));
+  if (firebaseConfigured) return enSegundoPlano(deleteDoc(docRef(name, id)), name);
   writeLocal(name, readLocal(name).filter((it) => it.id !== id));
 }
 
@@ -105,7 +126,7 @@ export async function removeMany(name, ids) {
     for (let i = 0; i < ids.length; i += 400) {
       const batch = writeBatch(db);
       ids.slice(i, i + 400).forEach((id) => batch.delete(docRef(name, id)));
-      await batch.commit();
+      enSegundoPlano(batch.commit(), name);
     }
   } else {
     const set_ = new Set(ids);
