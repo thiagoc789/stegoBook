@@ -19,7 +19,7 @@ function DeudaForm({ deuda, onClose }) {
     e.preventDefault();
     const payload = {
       persona: f.persona, tipo: f.tipo, nombre: f.nombre.trim() || TIPOS_DEUDA[f.tipo].label,
-      cuota: Number(f.cuota), tasaEA: Number(f.tasaEA) || 0,
+      cuota: Number(f.cuota), tasaEA: Number(f.tasaEA) || 0, dia: Number(f.dia) || null,
     };
     if (deuda?.id) await update('deudas', deuda.id, payload);
     else await add('deudas', { ...payload, saldo: Number(f.saldo), saldoOriginal: Number(f.saldo), desde: currentMonth(), fechaSaldo: currentMonth(), saldoActualizado: new Date().toISOString(), abonos: [] });
@@ -43,6 +43,7 @@ function DeudaForm({ deuda, onClose }) {
         <Field label="Cuota que pagas al mes" hint={f.tipo === 'tarjeta' ? 'Lo que piensas pagar cada mes (el mínimo o más).' : 'Se suma sola a tus gastos fijos, no la agregues también allá.'}>
           <MoneyInput value={f.cuota} onChange={s('cuota')} />
         </Field>
+        <Field label="Día de pago (opcional)"><input type="number" inputMode="numeric" min="1" max="31" value={f.dia || ''} onChange={s('dia')} placeholder="Ej: 15" /></Field>
         <Field label="Tasa de interés efectiva anual (% E.A.)" hint="Tarjetas en Colombia suelen estar entre 25% y 30% E.A. Un préstamo familiar sin intereses: 0.">
           <input type="number" inputMode="decimal" min="0" max="200" step="0.01" value={f.tasaEA} onChange={s('tasaEA')} placeholder="Ej: 28" />
         </Field>
@@ -161,7 +162,7 @@ export default function Deudas() {
             <div className="goal-head">
               <span className="goal-emoji">{TIPOS_DEUDA[d.tipo]?.emoji || '📄'}</span>
               <div className="grow">
-                <h3>{d.nombre}</h3>
+                <h3>{d.nombre}{d.prueba && ' 🧪'}</h3>
                 <small className="muted">{d.tasaEA ? `${d.tasaEA}% E.A.` : 'Sin intereses'} · cuota {fmt(d.cuota)}</small>
                 {!persona && <> <PersonaTag p={personaDe(d)} /></>}
               </div>

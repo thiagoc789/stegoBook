@@ -48,7 +48,7 @@ export function topeGustos(data, persona, config, mes = currentMonth()) {
   if (hist) {
     base = hist.gustos; necesidades = hist.necesidades;
     fuente = `lo que gastas en gustos en promedio (${hist.meses} ${hist.meses === 1 ? 'mes' : 'meses'})`;
-  } else if (hoy >= 10 && gustosMes > 0) {
+  } else if (hoy >= 10 && r.variables.length >= 8 && gustosMes > 0) {
     base = (gustosMes / hoy) * dias; necesidades = (necesidadesMes / hoy) * dias;
     fuente = 'tu ritmo de gustos de este mes';
   } else {

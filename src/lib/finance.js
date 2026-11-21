@@ -33,9 +33,9 @@ export function resumen(data, mes, persona = null) {
     const base = { persona: personaDe(d), categoria: 'Deudas', tipo: 'necesidad', esDeuda: true };
     const out = [];
     const cuota = cuotaEn(d, mes);
-    if (cuota > 0) out.push({ ...base, id: `deuda-${d.id}`, concepto: `Cuota ${d.nombre}`, monto: cuota });
+    if (cuota > 0) out.push({ ...base, id: `deuda-${d.id}`, deudaId: d.id, concepto: `Cuota ${d.nombre}`, monto: cuota, dia: d.dia, pagados: d.pagados, prueba: d.prueba });
     const abono = abonosEn(d, mes);
-    if (abono > 0) out.push({ ...base, id: `abono-${d.id}`, concepto: `Abono extra ${d.nombre}`, monto: abono });
+    if (abono > 0) out.push({ ...base, id: `abono-${d.id}`, esAbono: true, concepto: `Abono extra ${d.nombre}`, monto: abono });
     return out;
   });
   const fijos = [...data.gastosFijos.filter(de).filter((f) => fijoAplicaEn(f, mes)), ...deudasMes];

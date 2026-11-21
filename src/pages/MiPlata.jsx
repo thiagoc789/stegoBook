@@ -4,6 +4,7 @@ import { add, remove, removeMany, update } from '../lib/store';
 import { CATEGORIAS, infoCategoria, INICIO_APP, PERSONAS } from '../lib/constants';
 import { clasificar } from '../lib/clasificar';
 import { activoEn, fijoAplicaEn, personaDe, tipoDe } from '../lib/finance';
+import { togglePago } from '../components/PagosMes';
 import { addMonths, currentMonth, dateLabel, monthLabel, today } from '../lib/format';
 import {
   Card, confirmar, Empty, Field, Modal, MoneyInput, PersonaTag, Segmented,
@@ -67,7 +68,7 @@ function ExtraForm({ persona, onClose }) {
 
 function FijoForm({ persona, fijo, onClose }) {
   const { mes } = useApp();
-  const [f, setF] = useState(fijo || { concepto: '', monto: '', categoria: 'Vivienda', tipo: 'necesidad' });
+  const [f, setF] = useState(fijo || { concepto: '', monto: '', categoria: 'Vivienda', tipo: 'necesidad', dia: '' });
   const [auto, setAuto] = useState(!fijo);
   const onConcepto = (v) => {
     const r = auto ? clasificar(v) : null;
@@ -75,7 +76,7 @@ function FijoForm({ persona, fijo, onClose }) {
   };
   const submit = async (e) => {
     e.preventDefault();
-    const payload = { persona, concepto: f.concepto, monto: Number(f.monto), categoria: f.categoria, tipo: f.tipo };
+    const payload = { persona, concepto: f.concepto, monto: Number(f.monto), categoria: f.categoria, tipo: f.tipo, dia: Number(f.dia) || null };
     if (fijo?.id) await update('gastosFijos', fijo.id, payload);
     else await add('gastosFijos', { ...payload, frecuencia: 'mensual', desde: mes < currentMonth() ? mes : currentMonth(), hasta: null });
     onClose();
@@ -84,7 +85,10 @@ function FijoForm({ persona, fijo, onClose }) {
     <Modal title={fijo ? 'Editar gasto fijo' : 'Nuevo gasto fijo'} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <input value={f.concepto} onChange={(e) => onConcepto(e.target.value)} placeholder="Arriendo, internet, Netflix, gimnasio…" required autoFocus />
-        <Field label="Monto mensual"><MoneyInput value={f.monto} onChange={(v) => setF({ ...f, monto: v })} /></Field>
+        <div className="grid-2">
+          <Field label="Monto mensual"><MoneyInput value={f.monto} onChange={(v) => setF({ ...f, monto: v })} /></Field>
+          <Field label="Día de pago (opcional)"><input type="number" inputMode="numeric" min="1" max="31" value={f.dia || ''} onChange={(e) => setF({ ...f, dia: e.target.value })} placeholder="Ej: 5" /></Field>
+        </div>
         <Field label="Categoría">
           <select value={f.categoria} onChange={(e) => { setAuto(false); setF({ ...f, categoria: e.target.value, tipo: infoCategoria(e.target.value).tipo }); }}>
             {CATEGORIAS.map((c) => <option key={c.nombre} value={c.nombre}>{c.emoji} {c.nombre}</option>)}
@@ -107,15 +111,26 @@ function Configuracion() {
   const enPrueba = currentMonth() < INICIO_APP;
 
   const borrarPrueba = async () => {
-    if (!confirmar('Se borrarán TODOS los gastos del día a día, ingresos extra y aportes a metas de los dos. Se conservan salarios, gastos fijos y metas. ¿Continuar?')) return;
+    if (!confirmar('Se borrarán TODOS los gastos del día a día, ingresos extra, aportes a metas y lo que se cargó como dato de prueba. Se conservan los salarios, fijos, deudas y metas que ustedes crearon. ¿Continuar?')) return;
     await removeMany('gastos', data.gastos.map((g) => g.id));
     await removeMany('ingresos', data.ingresos.map((g) => g.id));
-    for (const m of data.metas) if ((m.aportes || []).length) await update('metas', m.id, { aportes: [] }); // eslint-disable-line no-await-in-loop
-    // salarios y fijos arrancan en diciembre
-    for (const s of [...data.salarios, ...data.gastosFijos]) {
-      const col = data.salarios.includes(s) ? 'salarios' : 'gastosFijos';
-      if (s.hasta && s.hasta < INICIO_APP) await remove(col, s.id); // eslint-disable-line no-await-in-loop
-      else if (!s.desde || s.desde < INICIO_APP) await update(col, s.id, { desde: INICIO_APP }); // eslint-disable-line no-await-in-loop
+    // todo lo que se cargó como dato de ejemplo
+    for (const col of ['salarios', 'gastosFijos', 'metas', 'deudas', 'casaItems']) {
+      await removeMany(col, data[col].filter((x) => x.prueba).map((x) => x.id)); // eslint-disable-line no-await-in-loop
+    }
+    const metasReales = data.metas.filter((m) => !m.prueba);
+    for (const m of metasReales) if ((m.aportes || []).length) await update('metas', m.id, { aportes: [] }); // eslint-disable-line no-await-in-loop
+    // salarios, fijos y deudas reales arrancan en diciembre y sin pagos marcados
+    for (const [col, lista] of [['salarios', data.salarios], ['gastosFijos', data.gastosFijos], ['deudas', data.deudas]]) {
+      for (const s of lista.filter((x) => !x.prueba)) { // eslint-disable-line no-restricted-syntax
+        if (s.hasta && s.hasta < INICIO_APP) { await remove(col, s.id); continue; } // eslint-disable-line no-await-in-loop
+        const patch = {};
+        if (col !== 'deudas' && (!s.desde || s.desde < INICIO_APP)) patch.desde = INICIO_APP;
+        if (col === 'deudas' && (s.desde || '') < INICIO_APP) { patch.desde = INICIO_APP; patch.fechaSaldo = INICIO_APP; }
+        if (s.pagados) patch.pagados = {};
+        if (col === 'deudas' && (s.abonos || []).length) patch.abonos = [];
+        if (Object.keys(patch).length) await update(col, s.id, patch); // eslint-disable-line no-await-in-loop
+      }
     }
     alert('Listo, quedó limpio para empezar 🎉');
   };
@@ -146,7 +161,7 @@ function Configuracion() {
           <button className="btn ghost sm" onClick={respaldo}>⬇ Descargar respaldo</button>
           <button className="btn ghost sm danger-txt" onClick={borrarPrueba}>🧹 Borrar datos de prueba</button>
         </div>
-        {enPrueba && <p className="small muted mt">Estamos en construcción hasta el 1 de diciembre. Ese día usen “Borrar datos de prueba” para arrancar limpio ({data.gastos.length} gastos de prueba, {fmt(data.gastos.reduce((a, g) => a + Number(g.monto || 0), 0))}).</p>}
+        {enPrueba && <p className="small muted mt">Estamos en construcción hasta el 1 de diciembre. Ese día usen “Borrar datos de prueba” para arrancar limpio ({data.gastos.length} gastos de prueba, {fmt(data.gastos.reduce((a, g) => a + Number(g.monto || 0), 0))}). Lo marcado con 🧪 es de ejemplo y también se borra.</p>}
       </Card>
     </>
   );
@@ -187,7 +202,7 @@ export default function MiPlata() {
             {salarios.map((s) => (
               <li key={s.id} className="clickable" onClick={() => setModal({ t: 'salario', item: s })}>
                 <span className="cat-dot" style={{ '--c': '#10b981' }}>💼</span>
-                <div className="grow"><b>{s.concepto}</b><small>Toca para cambiar el monto</small></div>
+                <div className="grow"><b>{s.concepto}{s.prueba && ' 🧪'}</b><small>Toca para cambiar el monto</small></div>
                 <strong className="txt-ok">{fmt(s.monto)}</strong>
                 <button className="icon-btn danger" aria-label="Eliminar"
                   onClick={(e) => { e.stopPropagation(); if (confirmar(`¿Eliminar "${s.concepto}" de ${fmt(s.monto)}? Se borra de todos los meses.`)) remove('salarios', s.id); }}>🗑</button>
@@ -219,8 +234,10 @@ export default function MiPlata() {
               const c = infoCategoria(f.categoria);
               return (
                 <li key={f.id} className="clickable" onClick={() => setModal({ t: 'fijo', item: f })}>
+                  <span className={`check-pago ${f.pagados?.[mes] ? 'on' : ''}`} role="checkbox" aria-checked={!!f.pagados?.[mes]} aria-label="Pagado este mes"
+                    onClick={(e) => { e.stopPropagation(); togglePago(f, mes); }}>{f.pagados?.[mes] ? '✓' : ''}</span>
                   <span className="cat-dot" style={{ '--c': c.color }}>{c.emoji}</span>
-                  <div className="grow"><b>{f.concepto}</b><small>{f.categoria} · {tipoDe(f) === 'gusto' ? '✨ gusto' : '✅ necesidad'}</small></div>
+                  <div className="grow"><b>{f.concepto}{f.prueba && ' 🧪'}</b><small>{f.dia ? `Día ${f.dia} · ` : ''}{f.categoria} · {tipoDe(f) === 'gusto' ? '✨ gusto' : '✅ necesidad'}</small></div>
                   <strong>{fmt(f.monto)}</strong>
                   <button className="icon-btn danger" onClick={(e) => { e.stopPropagation(); quitarFijo(f); }} aria-label="Quitar">🗑</button>
                 </li>

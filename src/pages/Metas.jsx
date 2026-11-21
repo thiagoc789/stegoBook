@@ -140,7 +140,7 @@ export default function Metas({ go }) {
             <div className="goal-head">
               <span className="goal-emoji">{m.emoji || '🎯'}</span>
               <div className="grow">
-                <h3>{m.nombre}</h3>
+                <h3>{m.nombre}{m.prueba && ' 🧪'}</h3>
                 <small className="muted">{m.fechaLimite ? `Para el ${dateLabel(m.fechaLimite)}` : 'Sin fecha'} · </small><PersonaTag p={duenoMeta(m)} />
               </div>
               <button className="icon-btn" onClick={() => setEdit(m)} aria-label="Editar">✏️</button>

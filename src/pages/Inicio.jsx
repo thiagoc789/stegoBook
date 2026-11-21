@@ -7,6 +7,7 @@ import { COLOR_PERSONA, infoCategoria, PERSONAS } from '../lib/constants';
 import { pct } from '../lib/format';
 import { Card, Empty, PersonaTag, Progress, TextoMonto } from '../components/ui';
 import TopeGustos from '../components/TopeGustos';
+import PagosMes from '../components/PagosMes';
 
 const ICON = { ok: '✅', alerta: '⚠️', peligro: '🚨', info: '💡', recorte: '✂️' };
 
@@ -154,6 +155,7 @@ export default function Inicio({ go }) {
       )}
       <TopeGustos />
       <Hero r={r} cuota={cuota} />
+      <PagosMes />
       <Recortar tips={tips} />
       <NecesidadGusto r={r} />
       <Categorias r={r} go={go} />
